@@ -37,6 +37,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/unistd.h>
+#include <openssl/md5.h>
 
 #include <string.h>
 
@@ -65,36 +66,33 @@ t_client *firstclient = NULL;
 /** Return current length of the client list
  */
 int
-get_client_list_length()
-{
-	return client_count;
+get_client_list_length() {
+    return client_count;
 }
 
 /** Get the first element of the client list
  */
 t_client *
-client_get_first_client(void)
-{
-	return firstclient;
+client_get_first_client(void) {
+    return firstclient;
 }
 
 /**
  * Initialize the list of connected clients
  */
 void
-client_list_init(void)
-{
-	s_config *config;
-	int i;
+client_list_init(void) {
+    s_config *config;
+    int i;
 
-	firstclient = NULL;
-	client_count = 0;
+    firstclient = NULL;
+    client_count = 0;
 
-	config = config_get_config();
-	client_arr = safe_malloc(config->maxclients * sizeof(t_client *));
+    config = config_get_config();
+    client_arr = safe_malloc(config->maxclients * sizeof (t_client *));
 
-	for (i = 0; i < config->maxclients; i++)
-		client_arr[i] = NULL;
+    for (i = 0; i < config->maxclients; i++)
+        client_arr[i] = NULL;
 }
 
 /** @internal
@@ -106,64 +104,65 @@ client_list_init(void)
  * @param ip IP address
  * @param mac MAC address
  * @param token Token
+ * @param secret Token
  * @return Pointer to the client we just created
  */
-t_client         *
-_client_list_append(const char *ip, const char *mac, const char *token)
-{
-	t_client *client, *prevclient;
-	s_config *config;
-	int maxclients, i;
+t_client *
+_client_list_append(const char *ip, const char *mac, const char *token, const char *secret) {
+    t_client *client, *prevclient;
+    s_config *config;
+    int maxclients, i;
 
-	config = config_get_config();
-	maxclients = config->maxclients;
-	if(client_count >= maxclients) {
-		debug(LOG_NOTICE, "Already list %d clients, cannot add %s %s", client_count, ip, mac);
-		return NULL;
-	}
+    config = config_get_config();
+    maxclients = config->maxclients;
+    if (client_count >= maxclients) {
+        debug(LOG_NOTICE, "Already list %d clients, cannot add %s %s", client_count, ip, mac);
+        return NULL;
+    }
 
-	prevclient = NULL;
-	client = firstclient;
+    prevclient = NULL;
+    client = firstclient;
 
-	while (client != NULL) {
-		prevclient = client;
-		client = client->next;
-	}
+    while (client != NULL) {
+        prevclient = client;
+        client = client->next;
+    }
 
-	client = safe_malloc(sizeof(t_client));
-	memset(client, 0, sizeof(t_client));
+    client = safe_malloc(sizeof (t_client));
+    memset(client, 0, sizeof (t_client));
 
-	client->ip = safe_strdup(ip);
-	client->mac = safe_strdup(mac);
-	client->token = token ? safe_strdup(token) : NULL;
-	client->fw_connection_state = FW_MARK_PREAUTHENTICATED;
-	client->counters.incoming = client->counters.incoming_history = 0;
-	client->counters.outgoing = client->counters.outgoing_history = 0;
-	last_client_time = time(NULL);
-	client->counters.last_updated = last_client_time;
-	client->added_time = last_client_time;
+    client->ip = safe_strdup(ip);
+    client->mac = safe_strdup(mac);
+    client->token = token ? safe_strdup(token) : NULL;
+    client->secret = secret ? safe_strdup(secret) : NULL;
+    client->fw_connection_state = FW_MARK_PREAUTHENTICATED;
+    client->counters.incoming = client->counters.incoming_history = 0;
+    client->counters.outgoing = client->counters.outgoing_history = 0;
+    last_client_time = time(NULL);
+    client->counters.last_updated = last_client_time;
+    client->added_time = last_client_time;
 
-	for (i = 0; i < maxclients; i++) {
-		if (client_arr[i])
-			continue;
-		break;
-	}
+    for (i = 0; i < maxclients; i++) {
+        if (client_arr[i])
+            continue;
+        break;
+    }
 
-	client_arr[i] = client;
-	client->idx = i;
+    client_arr[i] = client;
+    client->idx = i;
 
-	debug(LOG_NOTICE, "Adding %s %s token %s to client list",
-		  client->ip, client->mac, client->token ? client->token : "none");
+    debug(LOG_NOTICE, "Adding %s %s token %s secret %s to client list",
+            client->ip, client->mac, client->token ? client->token : "none", client->secret ? client->secret : "none");
 
-	if (prevclient == NULL) {
-		firstclient = client;
-	} else {
-		prevclient->next = client;
-	}
+    if (prevclient == NULL) {
+        firstclient = client;
+    } else {
+        prevclient->next = client;
+    }
 
-	client_count++;
+    client_count++;
 
-	return client;
+    return client;
 }
 
 /** @internal
@@ -173,13 +172,27 @@ _client_list_append(const char *ip, const char *mac, const char *token)
  *  independent of ip and mac.
  */
 char *
-_client_list_make_auth_token(const char* ip, const char* mac)
-{
-	char * token;
+_client_list_make_auth_token(const char* ip, const char* mac) {
+    char * token;
 
-	safe_asprintf(&token,"%04hx%04hx", rand16(), rand16());
+    safe_asprintf(&token, "%04hx%04hx", rand16(), rand16());
 
-	return token;
+    return token;
+}
+
+char* md5(const char* string) {
+    unsigned char digest[16];
+    
+    MD5_CTX context;
+    MD5_Init(&context);
+    MD5_Update(&context, string, strlen(string));
+    MD5_Final(digest, &context);
+
+    char* md5string = safe_malloc(33 * sizeof(char));
+    
+    for (int i = 0; i < 16; ++i)
+        sprintf(&md5string[i * 2], "%02x", (unsigned int) digest[i]);
+    return md5string;
 }
 
 /**
@@ -189,34 +202,40 @@ _client_list_make_auth_token(const char* ip, const char* mac)
  *  Return NULL if no new client entry can be created.
  */
 t_client *
-client_list_add_client(const char *ip)
-{
-	t_client *client;
-	char *mac, *token;
-	s_config *config;
+client_list_add_client(const char *ip) {
+    t_client *client;
+    char *mac, *token, *secret;
+    s_config *config;
 
-	if(!check_ip_format(ip)) {
-		/* Inappropriate format in IP address */
-		debug(LOG_NOTICE, "Illegal IP format [%s]", ip);
-		return NULL;
-	}
+    if (!check_ip_format(ip)) {
+        /* Inappropriate format in IP address */
+        debug(LOG_NOTICE, "Illegal IP format [%s]", ip);
+        return NULL;
+    }
 
-	if (!(mac = arp_get(ip))) {
-		/* We could not get their MAC address */
-		debug(LOG_NOTICE, "Could not arp MAC address for %s", ip);
-		return NULL;
-	}
+    if (!(mac = arp_get(ip))) {
+        /* We could not get their MAC address */
+        debug(LOG_NOTICE, "Could not arp MAC address for %s", ip);
+        return NULL;
+    }
 
-	if ((client = client_list_find(ip, mac)) == NULL) {
-		token = _client_list_make_auth_token(ip,mac);  /* get a new token */
-		client = _client_list_append(ip, mac, token);
-		free(token);
-	} else {
-		debug(LOG_INFO, "Client %s %s token %s already on client list",
-			  ip, mac, client->token);
-	}
-	free(mac);
-	return client;
+    if ((client = client_list_find(ip, mac)) == NULL) {
+        token = _client_list_make_auth_token(ip, mac); /* get a new token */
+
+        char* salted;
+        sprintf(salted, "%s%s", token, "ASD");
+
+        secret = md5(salted);
+                //		token = _client_list_make_auth_token(ip,mac);  /* get a new token */
+                client = _client_list_append(ip, mac, token, secret);
+                free(secret);
+        free(token);
+    } else {
+        debug(LOG_INFO, "Client %s %s token %s already on client list",
+                ip, mac, client->token);
+    }
+    free(mac);
+    return client;
 }
 
 /** Finds a  client by its IP and MAC, returns NULL if the client could not
@@ -226,20 +245,18 @@ client_list_add_client(const char *ip)
  * @return Pointer to the client, or NULL if not found
  */
 t_client *
-client_list_find(const char *ip, const char *mac)
-{
-	t_client *ptr;
+client_list_find(const char *ip, const char *mac) {
+    t_client *ptr;
 
-	ptr = firstclient;
-	while (NULL != ptr) {
-		if (!strcmp(ptr->ip, ip) && !strcmp(ptr->mac, mac))
-			return ptr;
-		ptr = ptr->next;
-	}
+    ptr = firstclient;
+    while (NULL != ptr) {
+        if (!strcmp(ptr->ip, ip) && !strcmp(ptr->mac, mac))
+            return ptr;
+        ptr = ptr->next;
+    }
 
-	return NULL;
+    return NULL;
 }
-
 
 /**
  * Finds a  client by its IP, returns NULL if the client could not
@@ -248,18 +265,17 @@ client_list_find(const char *ip, const char *mac)
  * @return Pointer to the client, or NULL if not found
  */
 t_client *
-client_list_find_by_ip(const char *ip)
-{
-	t_client *ptr;
+client_list_find_by_ip(const char *ip) {
+    t_client *ptr;
 
-	ptr = firstclient;
-	while (NULL != ptr) {
-		if (!strcmp(ptr->ip, ip))
-			return ptr;
-		ptr = ptr->next;
-	}
+    ptr = firstclient;
+    while (NULL != ptr) {
+        if (!strcmp(ptr->ip, ip))
+            return ptr;
+        ptr = ptr->next;
+    }
 
-	return NULL;
+    return NULL;
 }
 
 /**
@@ -269,18 +285,17 @@ client_list_find_by_ip(const char *ip)
  * @return Pointer to the client, or NULL if not found
  */
 t_client *
-client_list_find_by_mac(const char *mac)
-{
-	t_client *ptr;
+client_list_find_by_mac(const char *mac) {
+    t_client *ptr;
 
-	ptr = firstclient;
-	while (NULL != ptr) {
-		if (!strcmp(ptr->mac, mac))
-			return ptr;
-		ptr = ptr->next;
-	}
+    ptr = firstclient;
+    while (NULL != ptr) {
+        if (!strcmp(ptr->mac, mac))
+            return ptr;
+        ptr = ptr->next;
+    }
 
-	return NULL;
+    return NULL;
 }
 
 /** Finds a client by its token
@@ -288,18 +303,17 @@ client_list_find_by_mac(const char *mac)
  * @return Pointer to the client, or NULL if not found
  */
 t_client *
-client_list_find_by_token(const char *token)
-{
-	t_client *ptr;
+client_list_find_by_token(const char *token) {
+    t_client *ptr;
 
-	ptr = firstclient;
-	while (NULL != ptr) {
-		if (!strcmp(ptr->token, token))
-			return ptr;
-		ptr = ptr->next;
-	}
+    ptr = firstclient;
+    while (NULL != ptr) {
+        if (!strcmp(ptr->secret, token))
+            return ptr;
+        ptr = ptr->next;
+    }
 
-	return NULL;
+    return NULL;
 }
 
 /** @internal
@@ -309,21 +323,20 @@ client_list_find_by_token(const char *token)
  * @param client Points to the client to be freed
  */
 void
-_client_list_free_node(t_client * client)
-{
-	if (client->mac != NULL)
-		free(client->mac);
+_client_list_free_node(t_client * client) {
+    if (client->mac != NULL)
+        free(client->mac);
 
-	if (client->ip != NULL)
-		free(client->ip);
+    if (client->ip != NULL)
+        free(client->ip);
 
-	if (client->token != NULL)
-		free(client->token);
+    if (client->token != NULL)
+        free(client->token);
 
-	if (client_arr[client->idx] == client)
-		client_arr[client->idx] = NULL;
+    if (client_arr[client->idx] == client)
+        client_arr[client->idx] = NULL;
 
-	free(client);
+    free(client);
 }
 
 /**
@@ -334,35 +347,34 @@ _client_list_free_node(t_client * client)
  * @param client Points to the client to be deleted
  */
 void
-client_list_delete(t_client * client)
-{
-	t_client *ptr;
+client_list_delete(t_client * client) {
+    t_client *ptr;
 
-	ptr = firstclient;
+    ptr = firstclient;
 
-	if (ptr == NULL) {
-		debug(LOG_ERR, "Node list empty!");
-	} else if (ptr == client) {
-		debug(LOG_NOTICE, "Deleting %s %s token %s from client list",
-			  client->ip, client->mac, client->token ? client->token : "none");
-		firstclient = ptr->next;
-		_client_list_free_node(client);
-		client_count--;
-	} else {
-		/* Loop forward until we reach our point in the list. */
-		while (ptr->next != NULL && ptr->next != client) {
-			ptr = ptr->next;
-		}
-		/* If we reach the end before finding out element, complain. */
-		if (ptr->next == NULL) {
-			debug(LOG_ERR, "Node to delete could not be found.");
-		} else {
-			/* Free element. */
-			debug(LOG_NOTICE, "Deleting %s %s token %s from client list",
-				  client->ip, client->mac, client->token ? client->token : "none");
-			ptr->next = client->next;
-			_client_list_free_node(client);
-			client_count--;
-		}
-	}
+    if (ptr == NULL) {
+        debug(LOG_ERR, "Node list empty!");
+    } else if (ptr == client) {
+        debug(LOG_NOTICE, "Deleting %s %s token %s from client list",
+                client->ip, client->mac, client->token ? client->token : "none");
+        firstclient = ptr->next;
+        _client_list_free_node(client);
+        client_count--;
+    } else {
+        /* Loop forward until we reach our point in the list. */
+        while (ptr->next != NULL && ptr->next != client) {
+            ptr = ptr->next;
+        }
+        /* If we reach the end before finding out element, complain. */
+        if (ptr->next == NULL) {
+            debug(LOG_ERR, "Node to delete could not be found.");
+        } else {
+            /* Free element. */
+            debug(LOG_NOTICE, "Deleting %s %s token %s from client list",
+                    client->ip, client->mac, client->token ? client->token : "none");
+            ptr->next = client->next;
+            _client_list_free_node(client);
+            client_count--;
+        }
+    }
 }
