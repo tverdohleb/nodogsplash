@@ -225,7 +225,7 @@ client_list_add_client(const char *ip) {
         config = config_get_config();
 
         char* salted; // = (char *) safe_malloc(strlen(token) + strlen(config->gw_name));
-        asprintf(&salted, "%s scanix 100500 %s", token, config->gw_name);
+        asprintf(&salted, "%s %s %s", token, config->nas_id, config->nas_secret);
 
         secret = md5(salted);
 

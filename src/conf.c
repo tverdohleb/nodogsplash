@@ -69,6 +69,8 @@ typedef enum {
 	oDebugLevel,
 	oMaxClients,
 	oExternalInterface,
+	oNasId,
+	oNasSecret,
 	oGatewayName,
 	oGatewayInterface,
 	oGatewayIPRange,
@@ -125,6 +127,8 @@ static const struct {
 	{ "debuglevel", oDebugLevel },
 	{ "maxclients", oMaxClients },
 	{ "externalinterface", oExternalInterface },
+	{ "nasid", oNasId },
+	{ "nassecret", oNasSecret },
 	{ "gatewayname", oGatewayName },
 	{ "gatewayinterface", oGatewayInterface },
 	{ "gatewayiprange", oGatewayIPRange },
@@ -205,6 +209,8 @@ config_init(void)
 	config.ext_interface = NULL;
 	config.maxclients = DEFAULT_MAXCLIENTS;
 	config.gw_name = DEFAULT_GATEWAYNAME;
+	config.nas_id = "nas00";
+	config.nas_secret = "nassecret";
 	config.gw_interface = NULL;
 	config.gw_iprange = DEFAULT_GATEWAY_IPRANGE;
 	config.gw_address = NULL;
@@ -723,6 +729,12 @@ config_read(const char *filename)
 			}
 		case oExternalInterface:
 			config.ext_interface = safe_strdup(p1);
+			break;
+		case oNasId:
+			config.nas_id = safe_strdup(p1);
+			break;
+		case oNasSecret:
+			config.nas_secret = safe_strdup(p1);
 			break;
 		case oGatewayName:
 			config.gw_name = safe_strdup(p1);

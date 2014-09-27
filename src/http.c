@@ -484,6 +484,8 @@ http_nodogsplash_serve_splash(request *r, t_auth_target *authtarget, t_client *c
 	else
 		httpdAddVariable(r, "error_msg", "");
 	httpdAddVariable(r, "gatewayname", config->gw_name);
+	httpdAddVariable(r, "nasid", config->nas_id);
+	httpdAddVariable(r, "nassecret", config->nas_secret);
 	httpdAddVariable(r, "tok", authtarget->token);
 	httpdAddVariable(r, "secret", client->secret);
 	httpdAddVariable(r, "redir", authtarget->redir);

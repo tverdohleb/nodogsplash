@@ -146,6 +146,8 @@ typedef struct {
 	int maxclients;		/**< @brief Maximum number of clients allowed */
 	char *ext_interface;		/**< @brief Interface to external network */
 	char *gw_name;		/**< @brief Name of the gateway; e.g. its SSID */
+	char *nas_id;		/**< @brief NAS ID */
+	char *nas_secret;		/**< @brief NAS Secret */
 	char *gw_interface;		/**< @brief Interface we will manage */
 	char *gw_iprange;		/**< @brief IP range on gw_interface we will manage */
 	char *gw_address;		/**< @brief Internal IP address for our web server */
