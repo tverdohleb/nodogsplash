@@ -1,7 +1,7 @@
 
 CC?=gcc
 CFLAGS?=-O2
-CFLAGS+=-Isrc -Ilibhttpd -std=gnu11
+CFLAGS+=-Isrc -Ilibhttpd
 #CFLAGS+=-Wall -Wwrite-strings -pedantic -std=gnu99
 LDFLAGS+=-pthread
 LDLIBS=-lcrypto

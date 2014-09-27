@@ -189,8 +189,8 @@ char* md5(const char* string) {
     MD5_Final(digest, &context);
 
     char* md5string = safe_malloc(33 * sizeof(char));
-    
-    for (int i = 0; i < 16; ++i)
+    int i;
+    for (i = 0; i < 16; ++i)
         sprintf(&md5string[i * 2], "%02x", (unsigned int) digest[i]);
     return md5string;
 }
