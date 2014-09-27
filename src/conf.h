@@ -51,7 +51,7 @@
 #define DEFAULT_DEBUGLEVEL LOG_NOTICE
 #define DEFAULT_MAXCLIENTS 20
 #define DEFAULT_GATEWAY_IPRANGE "0.0.0.0/0"
-#define DEFAULT_GATEWAYNAME "NoDogSplash"
+#define DEFAULT_GATEWAYNAME "Free WiFi"
 #define DEFAULT_GATEWAYPORT 2050
 #define DEFAULT_REMOTE_AUTH_PORT 80
 #define DEFAULT_CHECKINTERVAL 60
@@ -62,8 +62,8 @@
 #define DEFAULT_INFOSKELPAGE "infoskel.html"
 #define DEFAULT_IMAGESDIR "images"
 #define DEFAULT_PAGESDIR "pages"
-#define DEFAULT_AUTHDIR "nodogsplash_auth"
-#define DEFAULT_DENYDIR "nodogsplash_deny"
+#define DEFAULT_AUTHDIR "logon"
+#define DEFAULT_DENYDIR "auth_deny"
 #define DEFAULT_MACMECHANISM MAC_BLOCK
 #define DEFAULT_PASSWORD_AUTH 0
 #define DEFAULT_USERNAME_AUTH 0
@@ -148,6 +148,7 @@ typedef struct {
 	char *gw_name;		/**< @brief Name of the gateway; e.g. its SSID */
 	char *nas_id;		/**< @brief NAS ID */
 	char *nas_secret;		/**< @brief NAS Secret */
+	char *nas_hash;		/**< @brief NAS Public Hash */
 	char *gw_interface;		/**< @brief Interface we will manage */
 	char *gw_iprange;		/**< @brief IP range on gw_interface we will manage */
 	char *gw_address;		/**< @brief Internal IP address for our web server */
@@ -161,6 +162,7 @@ typedef struct {
 	char *infoskelpage;		/**< @brief Name of info skeleton page */
 	char *imagesdir;		/**< @brief Subdir of webroot containing .png .gif files etc */
 	char *pagesdir;		/**< @brief Subdir of webroot containing other .html files */
+	char *authURL;		/**< @brief URL to direct client to after authentication */
 	char *redirectURL;		/**< @brief URL to direct client to after authentication */
 	char *authdir;		/**< @brief Notional relative dir for authentication URL */
 	char *denydir;		/**< @brief Notional relative dir for denial URL */

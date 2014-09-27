@@ -71,6 +71,8 @@ typedef enum {
 	oExternalInterface,
 	oNasId,
 	oNasSecret,
+	oNasHash,
+	oAuthUrl,
 	oGatewayName,
 	oGatewayInterface,
 	oGatewayIPRange,
@@ -129,6 +131,8 @@ static const struct {
 	{ "externalinterface", oExternalInterface },
 	{ "nasid", oNasId },
 	{ "nassecret", oNasSecret },
+	{ "nashash", oNasHash },
+	{ "authurl", oAuthUrl },
 	{ "gatewayname", oGatewayName },
 	{ "gatewayinterface", oGatewayInterface },
 	{ "gatewayiprange", oGatewayIPRange },
@@ -209,6 +213,7 @@ config_init(void)
 	config.ext_interface = NULL;
 	config.maxclients = DEFAULT_MAXCLIENTS;
 	config.gw_name = DEFAULT_GATEWAYNAME;
+	config.authURL = "http://example.com/";
 	config.nas_id = "nas00";
 	config.nas_secret = "nassecret";
 	config.gw_interface = NULL;
@@ -735,6 +740,12 @@ config_read(const char *filename)
 			break;
 		case oNasSecret:
 			config.nas_secret = safe_strdup(p1);
+			break;
+		case oNasHash:
+			config.nas_hash = safe_strdup(p1);
+			break;
+		case oAuthUrl:
+			config.authURL = safe_strdup(p1);
 			break;
 		case oGatewayName:
 			config.gw_name = safe_strdup(p1);
