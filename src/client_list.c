@@ -182,13 +182,13 @@ _client_list_make_auth_token(const char* ip, const char* mac) {
 
 char* md5(const char* string) {
     unsigned char digest[16];
-    
+
     MD5_CTX context;
     MD5_Init(&context);
     MD5_Update(&context, string, strlen(string));
     MD5_Final(digest, &context);
 
-    char* md5string = safe_malloc(33 * sizeof(char));
+    char* md5string = safe_malloc(33 * sizeof (char));
     int i;
     for (i = 0; i < 16; ++i)
         sprintf(&md5string[i * 2], "%02x", (unsigned int) digest[i]);
@@ -222,13 +222,15 @@ client_list_add_client(const char *ip) {
     if ((client = client_list_find(ip, mac)) == NULL) {
         token = _client_list_make_auth_token(ip, mac); /* get a new token */
 
-        char* salted;
-        sprintf(salted, "%s%s", token, "ASD");
+        config = config_get_config();
+
+        char* salted; // = (char *) safe_malloc(strlen(token) + strlen(config->gw_name));
+        asprintf(&salted, "%s scanix 100500 %s", token, config->gw_name);
 
         secret = md5(salted);
-                //		token = _client_list_make_auth_token(ip,mac);  /* get a new token */
-                client = _client_list_append(ip, mac, token, secret);
-                free(secret);
+
+        client = _client_list_append(ip, mac, token, secret);
+        free(secret);
         free(token);
     } else {
         debug(LOG_INFO, "Client %s %s token %s already on client list",
