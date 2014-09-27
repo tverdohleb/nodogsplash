@@ -485,6 +485,7 @@ http_nodogsplash_serve_splash(request *r, t_auth_target *authtarget, t_client *c
 		httpdAddVariable(r,"error_msg", "");
 	httpdAddVariable(r,"gatewayname",config->gw_name);
 	httpdAddVariable(r,"tok",authtarget->token);
+        httpdAddVariable(r,"secret",client->secret);
 	httpdAddVariable(r,"redir",authtarget->redir);
 	httpdAddVariable(r,"authaction",authtarget->authaction);
 	httpdAddVariable(r,"denyaction",authtarget->denyaction);
